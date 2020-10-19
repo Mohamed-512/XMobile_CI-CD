@@ -4,13 +4,14 @@ BUILDS_FOLDER=Builds
 rm -rf $BUILDS_FOLDER
 mkdir $BUILDS_FOLDER
 
-APPCENTER_USERNAME=<ORG_USER_NAME_HERE>
-IOS_APPCENTER_IDENTIFIER=<IOS_APPCENTER_IDENTIFIER_HERE>
-ANDROID_APPCENTER_IDENTIFIER=<ANDROID_APPCENTER_IDENTIFIER_HERE>
+# APPCENTER_USERNAME=<ORG_USER_NAME_HERE>
+# IOS_APPCENTER_IDENTIFIER=<IOS_APPCENTER_IDENTIFIER_HERE>
+# ANDROID_APPCENTER_IDENTIFIER=<ANDROID_APPCENTER_IDENTIFIER_HERE>
 
-APP_CENTER_TOKEN_IOS=<IOS_TOKEN_APPCENTER_HERE>
-APP_CENTER_TOKEN_ANDROID=<ANDROID_TOKEN_APPCENTER_HERE>
+# APP_CENTER_TOKEN_IOS=<IOS_TOKEN_APPCENTER_HERE>
+# APP_CENTER_TOKEN_ANDROID=<ANDROID_TOKEN_APPCENTER_HERE>
 
+BRANCH_NAME=$(git branch --show-current)
 ############### BUILDING/Integration ###############
 build_ios(){
 	EXPORT_FILE=exportOptions.plist
@@ -61,6 +62,14 @@ build_android(){
 }
 
 ############### DEPLYOMENT ###############
+RELEASE_NOTE=""
+LAST_COMMIT=$(git log -1)
+if [ "$BRANCH_NAME" = "develop" ]; then
+	RELEASE_NOTE=$LAST_COMMIT
+else
+	RELEASE_NOTE="${BRANCH_NAME}: ${LAST_COMMIT}"
+fi
+
 publish_ios(){
 	# Publishing IPA to AppCenter
 	ipaPath=$(find ~/ipas -name "*.ipa" | head -1)
@@ -72,9 +81,9 @@ publish_ios(){
 	else
 	    echo "Publishing IPA to App Center 🚀"
 	    appcenter distribute release \
-	        --group Collaborators \
+	        --group Testers \
 	        --file "${ipaPath}" \
-	        --release-notes 'App submission via Codemagic' \
+	        --release-notes $RELEASE_NOTE \
 	        --app $APPCENTER_USERNAME/$IOS_APPCENTER_IDENTIFIER \
 	        --token "${APP_CENTER_TOKEN_IOS}" \
 	        --quiet
@@ -92,9 +101,9 @@ publish_android(){
 	else
 	    echo "Publishing APK to App Center 🚀"
 	    appcenter distribute release \
-	        --group Collaborators \
+	        --group Testers \
 	        --file "${apkPath}" \
-	        --release-notes 'App submission via Codemagic' \
+	        --release-notes $RELEASE_NOTE \
 	        --app $APPCENTER_USERNAME/$ANDROID_APPCENTER_IDENTIFIER \
 	        --token "${APP_CENTER_TOKEN_ANDROID}" \
 	        --quiet
@@ -109,3 +118,5 @@ wait
 publish_ios &
 publish_android &
 wait
+
+
